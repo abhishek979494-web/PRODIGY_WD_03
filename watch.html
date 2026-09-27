@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stopwatch</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #1a1a20;
+      --surface-hover: #24242c;
+      --border: #2e2e38;
+      --text: #f0f0f5;
+      --text-muted: #8a8a9a;
+      --accent: #6c5ce7;
+      --accent-hover: #7f71f0;
+      --green: #00b894;
+      --green-hover: #00d2a0;
+      --red: #e74c3c;
+      --red-hover: #ff6b5c;
+      --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      --radius: 20px;
+      --radius-btn: 14px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      color: var(--text);
+      padding: 20px;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(108, 92, 231, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(0, 184, 148, 0.06) 0%, transparent 50%);
+    }
+
+    .stopwatch {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .display {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 28px 20px;
+      margin-bottom: 24px;
+      text-align: center;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .time {
+      font-size: 3.2rem;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+      transition: color 0.3s ease;
+    }
+
+    .time.running {
+      color: var(--green);
+    }
+
+    .milliseconds {
+      font-size: 1.6rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-left: 2px;
+    }
+
+    .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      height: 52px;
+      border-radius: var(--radius-btn);
+      cursor: pointer;
+      color: var(--text);
+      background: var(--surface-hover);
+      transition:
+        background 0.15s ease,
+        transform 0.1s ease,
+        box-shadow 0.15s ease;
+      flex: 1;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:hover {
+      background: #2e2e38;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    button.start {
+      background: var(--green);
+      color: #fff;
+    }
+
+    button.start:hover {
+      background: var(--green-hover);
+    }
+
+    button.stop {
+      background: var(--red);
+      color: #fff;
+    }
+
+    button.stop:hover {
+      background: var(--red-hover);
+    }
+
+    button.lap {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.lap:hover {
+      background: var(--accent-hover);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .laps-container {
+      max-height: 220px;
+      overflow-y: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .laps-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .laps-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .laps-container::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .laps-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr;
+      padding: 10px 16px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+    }
+
+    .lap-list {
+      list-style: none;
+    }
+
+    .lap-item {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-variant-numeric: tabular-nums;
+      border-bottom: 1px solid rgba(46, 46, 56, 0.6);
+      animation: slideIn 0.25s ease-out;
+    }
+
+    .lap-item:last-child {
+      border-bottom: none;
+    }
+
+    .lap-item .num {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .lap-item .split {
+      text-align: right;
+      color: var(--text);
+    }
+
+    .lap-item .total {
+      text-align: right;
+      color: var(--text-muted);
+    }
+
+    .lap-item.best .split {
+      color: var(--green);
+    }
+
+    .lap-item.worst .split {
+      color: var(--red);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .empty-laps {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 400px) {
+      .time {
+        font-size: 2.6rem;
+      }
+      .milliseconds {
+        font-size: 1.3rem;
+      }
+      button {
+        height: 48px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stopwatch">
+    <div class="display">
+      <div class="time" id="time">
+        00:00:00<span class="milliseconds">.00</span>
+      </div>
+      <div class="label" id="status">Ready</div>
+    </div>
+
+    <div class="controls">
+      <button class="start" id="startBtn">Start</button>
+      <button class="lap" id="lapBtn" disabled>Lap</button>
+      <button id="resetBtn" disabled>Reset</button>
+    </div>
+
+    <div class="laps-container" id="lapsContainer">
+      <div class="empty-laps" id="emptyLaps">No laps yet</div>
+      <div class="laps-header" id="lapsHeader" style="display: none;">
+        <span>#</span>
+        <span style="text-align: right;">Split</span>
+        <span style="text-align: right;">Total</span>
+      </div>
+      <ul class="lap-list" id="lapList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const timeEl = document.getElementById("time");
+    const statusEl = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const lapBtn = document.getElementById("lapBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const lapList = document.getElementById("lapList");
+    const emptyLaps = document.getElementById("emptyLaps");
+    const lapsHeader = document.getElementById("lapsHeader");
+
+    let startTime = 0;
+    let elapsed = 0;
+    let timerId = null;
+    let running = false;
+    let laps = [];
+    let lastLapTime = 0;
+
+    function formatTime(ms) {
+      const totalCs = Math.floor(ms / 10);
+      const cs = totalCs % 100;
+      const totalSec = Math.floor(totalCs / 100);
+      const sec = totalSec % 60;
+      const totalMin = Math.floor(totalSec / 60);
+      const min = totalMin % 60;
+      const hrs = Math.floor(totalMin / 60);
+
+      const pad = (n, d = 2) => String(n).padStart(d, "0");
+      return {
+        main: `${pad(hrs)}:${pad(min)}:${pad(sec)}`,
+        ms: pad(cs)
+      };
+    }
+
+    function updateDisplay() {
+      const now = running ? Date.now() - startTime + elapsed : elapsed;
+      const { main, ms } = formatTime(now);
+      timeEl.innerHTML = `${main}<span class="milliseconds">.${ms}</span>`;
+    }
+
+    function tick() {
+      updateDisplay();
+    }
+
+    function start() {
+      if (running) return;
+      running = true;
+      startTime = Date.now();
+      timerId = setInterval(tick, 10);
+      startBtn.textContent = "Stop";
+      startBtn.classList.remove("start");
+      startBtn.classList.add("stop");
+      lapBtn.disabled = false;
+      resetBtn.disabled = false;
+      timeEl.classList.add("running");
+      statusEl.textContent = "Running";
+    }
+
+    function stop() {
+      if (!running) return;
+      running = false;
+      elapsed += Date.now() - startTime;
+      clearInterval(timerId);
+      timerId = null;
+      startBtn.textContent = "Start";
+      startBtn.classList.remove("stop");
+      startBtn.classList.add("start");
+      lapBtn.disabled = true;
+      timeEl.classList.remove("running");
+      statusEl.textContent = "Paused";
+      updateDisplay();
+    }
+
+    function reset() {
+      stop();
+      elapsed = 0;
+      lastLapTime = 0;
+      laps = [];
+      updateDisplay();
+      statusEl.textContent = "Ready";
+      resetBtn.disabled = true;
+      lapBtn.disabled = true;
+      renderLaps();
+    }
+
+    function addLap() {
+      if (!running) return;
+      const now = Date.now() - startTime + elapsed;
+      const split = now - lastLapTime;
+      lastLapTime = now;
+      laps.unshift({ split, total: now });
+      renderLaps();
+    }
+
+    function renderLaps() {
+      if (laps.length === 0) {
+        emptyLaps.style.display = "block";
+        lapsHeader.style.display = "none";
+        lapList.innerHTML = "";
+        return;
+      }
+
+      emptyLaps.style.display = "none";
+      lapsHeader.style.display = "grid";
+
+      // Find best and worst splits (only if more than 1 lap)
+      let bestIdx = -1;
+      let worstIdx = -1;
+      if (laps.length > 1) {
+        let best = Infinity;
+        let worst = -Infinity;
+        laps.forEach((lap, i) => {
+          if (lap.split < best) {
+            best = lap.split;
+            bestIdx = i;
+          }
+          if (lap.split > worst) {
+            worst = lap.split;
+            worstIdx = i;
+          }
+        });
+      }
+
+      lapList.innerHTML = laps
+        .map((lap, i) => {
+          const num = laps.length - i;
+          const splitFmt = formatTime(lap.split);
+          const totalFmt = formatTime(lap.total);
+          let cls = "";
+          if (i === bestIdx) cls = "best";
+          if (i === worstIdx) cls = "worst";
+          return `
+            <li class="lap-item ${cls}">
+              <span class="num">${num}</span>
+              <span class="split">${splitFmt.main}.${splitFmt.ms}</span>
+              <span class="total">${totalFmt.main}.${totalFmt.ms}</span>
+            </li>
+          `;
+        })
+        .join("");
+    }
+
+    startBtn.addEventListener("click", () => {
+      if (running) stop();
+      else start();
+    });
+
+    lapBtn.addEventListener("click", addLap);
+    resetBtn.addEventListener("click", reset);
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (running) stop();
+        else start();
+      } else if (e.key === "l" || e.key === "L") {
+        if (running) addLap();
+      } else if (e.key === "r" || e.key === "R" || e.key === "Escape") {
+        reset();
+      }
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
